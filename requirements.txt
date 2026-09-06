@@ -1,0 +1,9 @@
+gradio
+langchain-openai
+langchain-community
+langchain
+langchain-google-genai
+langchain-anthropic
+python-dotenv
+google-genai
+requests
