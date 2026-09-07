@@ -1,6 +1,6 @@
 ---
 title: Gemini and Ollama Chatbot
-emoji: robot
+emoji: 🤖
 colorFrom: blue
 colorTo: green
 sdk: gradio
