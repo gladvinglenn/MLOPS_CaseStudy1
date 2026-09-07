@@ -1,61 +1,18 @@
-name: Deploy to Hugging Face Space
+name: Sync to Hugging Face Hub
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
-
-permissions:
-  contents: read
+    branches: [main]
 
 jobs:
-  deploy:
+  sync:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: huggingface/hub-sync@v0.1.0
         with:
-          python-version: "3.11"
-
-      - name: Install Hugging Face Hub client
-        run: python -m pip install --upgrade huggingface_hub
-
-      - name: Upload app to Hugging Face Space
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE: ${{ secrets.HF_SPACE }}
-        run: |
-          python - <<'PY'
-          import os
-          from huggingface_hub import HfApi
-
-          token = os.environ["HF_TOKEN"]
-          space_id = os.environ["HF_SPACE"].strip().strip("/")
-          parts = space_id.split("/")
-          if len(parts) != 2 or not all(parts) or "://" in space_id:
-              raise ValueError(
-                  "HF_SPACE must be exactly 'username/space-name', "
-                  "for example 'gladvinglenn/chatbot-space'; do not use a URL."
-              )
-
-          HfApi(token=token).upload_folder(
-              folder_path=".",
-              repo_id=space_id,
-              repo_type="space",
-              ignore_patterns=[
-                  ".env",
-                  ".env.*",
-                  ".venv/**",
-                  ".git/**",
-                  ".github/**",
-                  ".gradio/**",
-                  "__pycache__/**",
-                  "*.pyc",
-              ],
-              commit_message="Deploy chatbot from GitHub Actions",
-          )
-          PY
+          github_repo_id: ${{ github.repository }}
+          huggingface_repo_id: GlennDsOuZa/CaseStudy1
+          hf_token: ${{ secrets.HF_TOKEN }}
