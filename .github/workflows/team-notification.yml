@@ -28,6 +28,7 @@ jobs:
           python - <<'PY'
           import json
           import os
+          import urllib.error
           import urllib.request
 
           status = os.environ["WORKFLOW_STATUS"]
@@ -39,18 +40,25 @@ jobs:
               f"Run: {os.environ['RUN_URL']}"
           )
 
-          if "discord.com/api/webhooks" in os.environ["WEBHOOK_URL"]:
+          webhook_url = os.environ["WEBHOOK_URL"]
+          if "discord.com/api/webhooks" in webhook_url or "discordapp.com/api/webhooks" in webhook_url:
               payload = {"content": message}
           else:
               payload = {"text": message}
 
           request = urllib.request.Request(
-              os.environ["WEBHOOK_URL"],
+              webhook_url,
               data=json.dumps(payload).encode("utf-8"),
               headers={"Content-Type": "application/json"},
               method="POST",
           )
-          with urllib.request.urlopen(request) as response:
-              if response.status >= 300:
-                  raise RuntimeError(f"Webhook returned HTTP {response.status}")
+          try:
+              with urllib.request.urlopen(request) as response:
+                  if response.status >= 300:
+                      raise RuntimeError(f"Webhook returned HTTP {response.status}")
+          except urllib.error.HTTPError as error:
+              details = error.read().decode("utf-8", errors="replace")
+              raise RuntimeError(
+                  f"Webhook rejected the notification with HTTP {error.code}: {details}"
+              ) from error
           PY
