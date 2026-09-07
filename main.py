@@ -4,6 +4,16 @@ import json
 import requests
 from dotenv import load_dotenv
 
+try:
+    import spaces
+except ImportError:
+    class _SpacesFallback:
+        @staticmethod
+        def GPU(function):
+            return function
+
+    spaces = _SpacesFallback()
+
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_anthropic import ChatAnthropic
@@ -85,6 +95,7 @@ def _stream_ollama(messages):
             yield partial_message
 
 
+@spaces.GPU
 def stream_response(message, history, selected_provider):
     print(f"Input: {message}. Provider: {selected_provider}. History: {history}\n")
 
