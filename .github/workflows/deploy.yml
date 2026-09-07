@@ -34,9 +34,13 @@ jobs:
           from huggingface_hub import HfApi
 
           token = os.environ["HF_TOKEN"]
-          space_id = os.environ["HF_SPACE"]
-          if not space_id or "/" not in space_id:
-              raise ValueError("HF_SPACE must be in the form username/space-name")
+            space_id = os.environ["HF_SPACE"].strip().strip("/")
+            parts = space_id.split("/")
+            if len(parts) != 2 or not all(parts) or "://" in space_id:
+              raise ValueError(
+                "HF_SPACE must be exactly 'username/space-name', "
+                "for example 'gladvinglenn/chatbot-space'; do not use a URL."
+              )
 
           HfApi(token=token).upload_folder(
               folder_path=".",
