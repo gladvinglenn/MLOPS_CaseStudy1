@@ -12,6 +12,6 @@ pinned: false
 
 # Gemini and Ollama Chatbot
 
-This Gradio app supports Gemini Remote and Local Model (Ollama) providers.
+This Gradio app supports Gemini Remote, Local Model (Ollama), and Local Model (Transformers) providers.
 
-On Hugging Face Spaces, configure `GOOGLE_API_KEY` as a Space secret for Gemini. A local `127.0.0.1` Ollama service is not available in a hosted Space; use an externally reachable Ollama endpoint by setting `OLLAMA_URL` and `OLLAMA_MODEL` as Space variables if needed.
+On Hugging Face Spaces, configure `GOOGLE_API_KEY` as a Space secret for Gemini. The Transformers provider runs inside the Space using `TRANSFORMERS_MODEL`, which defaults to `Qwen/Qwen2.5-0.5B-Instruct`. A local `127.0.0.1` Ollama service is only available when running the app on your own machine.

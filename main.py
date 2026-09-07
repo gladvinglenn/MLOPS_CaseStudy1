@@ -23,16 +23,17 @@ import gradio as gr
 
 load_dotenv()
 
-if not os.getenv("GOOGLE_API_KEY"):
-    raise RuntimeError("GOOGLE_API_KEY is missing. Add it to the .env file.")
-
-client = genai.Client()
+client = None
 remote_model = "gemini-3.6-flash"
 ollama_url = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
 ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
+transformers_model = os.getenv(
+    "TRANSFORMERS_MODEL", "Qwen/Qwen2.5-0.5B-Instruct"
+)
 available_providers = [
     "Gemini Remote",
     "Local Model (Ollama)",
+    "Local Model (Transformers)",
 ]
 remote_models = [
     "gemini-3.5-flash",
@@ -95,8 +96,42 @@ def _stream_ollama(messages):
             yield partial_message
 
 
+transformers_pipeline = None
+
+
+def _stream_transformers(messages):
+    global transformers_pipeline
+
+    if transformers_pipeline is None:
+        try:
+            from transformers import pipeline
+
+            transformers_pipeline = pipeline(
+                "text-generation",
+                model=transformers_model,
+                device_map="auto",
+            )
+        except Exception as error:
+            yield f"Transformers model could not be loaded: {error}"
+            return
+
+    prompt = transformers_pipeline.tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
+    result = transformers_pipeline(
+        prompt,
+        max_new_tokens=256,
+        do_sample=True,
+        temperature=0.7,
+        return_full_text=False,
+    )
+    yield result[0]["generated_text"]
+
+
 @spaces.GPU
 def stream_response(message, history, selected_provider):
+    global client
+
     print(f"Input: {message}. Provider: {selected_provider}. History: {history}\n")
 
     messages = _conversation_messages(message, history)
@@ -105,7 +140,14 @@ def stream_response(message, history, selected_provider):
 
     if selected_provider == "Local Model (Ollama)":
         yield from _stream_ollama(messages)
+    elif selected_provider == "Local Model (Transformers)":
+        yield from _stream_transformers(messages)
     else:
+        if client is None:
+            if not os.getenv("GOOGLE_API_KEY"):
+                yield "Gemini Remote requires the GOOGLE_API_KEY secret."
+                return
+            client = genai.Client()
         prompt = "\n".join(
             f"{item['role'].title()}: {item['content']}" for item in messages
         )
@@ -124,7 +166,7 @@ model_selector = gr.Dropdown(
     choices=available_providers,
     value=available_providers[0],
     label="Model",
-    info="Choose Gemini Remote or a local Ollama model.",
+    info="Choose Gemini Remote, Ollama, or a Transformers model.",
 )
 
 demo_interface = gr.ChatInterface(
