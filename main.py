@@ -128,6 +128,15 @@ def _stream_transformers(messages):
     yield result[0]["generated_text"]
 
 
+def local_response(prompt):
+    """Return one response from the configured local Transformers model."""
+    response = next(
+        _stream_transformers(_conversation_messages(prompt, [])),
+        "",
+    )
+    return response
+
+
 @spaces.GPU
 def stream_response(message, history, selected_provider):
     global client
