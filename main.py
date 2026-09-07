@@ -129,4 +129,4 @@ demo_interface = gr.ChatInterface(
 )
 
 if __name__ == "__main__":
-    demo_interface.launch(debug=True, share=True)
+    demo_interface.launch(debug=True, share=False)
