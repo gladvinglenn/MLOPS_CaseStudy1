@@ -2,4 +2,3 @@ gradio
 python-dotenv
 google-genai
 transformers
-torch
