@@ -3,6 +3,7 @@
 !.env.example
 
 .venv/
+.venv-chatbot/
 __pycache__/
 *.py[cod]
 .gradio/

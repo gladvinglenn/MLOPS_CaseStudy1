@@ -1,47 +1,21 @@
 import os
-import json
-
-import requests
 from dotenv import load_dotenv
-
-try:
-    import spaces
-except ImportError:
-    class _SpacesFallback:
-        @staticmethod
-        def GPU(function):
-            return function
-
-    spaces = _SpacesFallback()
-
-from langchain_openai import ChatOpenAI
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_anthropic import ChatAnthropic
 from google import genai
+from google.genai import errors, types
 
 import gradio as gr
 
 load_dotenv()
 
 client = None
-remote_model = "gemini-3.6-flash"
-ollama_url = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
-ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
+remote_model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 transformers_model = os.getenv(
     "TRANSFORMERS_MODEL", "Qwen/Qwen2.5-0.5B-Instruct"
 )
 available_providers = [
     "Gemini Remote",
-    "Local Model (Ollama)",
     "Local Model (Transformers)",
 ]
-remote_models = [
-    "gemini-3.5-flash",
-    "gemini-3.6-flash",
-    "gemini-3.7-flash",
-]
-#llm = ChatOpenAI(model="gpt-4o-mini", streaming=True)
-#llm = ChatAnthropic(model="claude-3-5-sonnet-20241022", streaming=True)
 
 system_message = "You act like a teacher"
 
@@ -70,32 +44,6 @@ def _conversation_messages(message, history):
     return messages
 
 
-def _stream_ollama(messages):
-    try:
-        response = requests.post(
-            f"{ollama_url}/api/chat",
-            json={"model": ollama_model, "messages": messages, "stream": True},
-            stream=True,
-            timeout=30,
-        )
-        response.raise_for_status()
-    except requests.RequestException as error:
-        yield (
-            "Local Model is unavailable. Start Ollama and run "
-            f"'ollama pull {ollama_model}'. Details: {error}"
-        )
-        return
-
-    partial_message = ""
-    for line in response.iter_lines(decode_unicode=True):
-        if not line:
-            continue
-        event = json.loads(line)
-        partial_message += event.get("message", {}).get("content", "")
-        if partial_message:
-            yield partial_message
-
-
 transformers_pipeline = None
 
 
@@ -109,7 +57,7 @@ def _stream_transformers(messages):
             transformers_pipeline = pipeline(
                 "text-generation",
                 model=transformers_model,
-                device_map="auto",
+                device=-1,
             )
         except Exception as error:
             yield f"Transformers model could not be loaded: {error}"
@@ -137,45 +85,58 @@ def local_response(prompt):
     return response
 
 
-@spaces.GPU
 def stream_response(message, history, selected_provider):
     global client
-
-    print(f"Input: {message}. Provider: {selected_provider}. History: {history}\n")
 
     messages = _conversation_messages(message, history)
     if message is None:
         return
 
-    if selected_provider == "Local Model (Ollama)":
-        yield from _stream_ollama(messages)
-    elif selected_provider == "Local Model (Transformers)":
+    if selected_provider == "Local Model (Transformers)":
         yield from _stream_transformers(messages)
-    else:
+    elif selected_provider == "Gemini Remote":
         if client is None:
             if not os.getenv("GOOGLE_API_KEY"):
                 yield "Gemini Remote requires the GOOGLE_API_KEY secret."
                 return
-            client = genai.Client()
-        prompt = "\n".join(
-            f"{item['role'].title()}: {item['content']}" for item in messages
-        )
+            client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+        contents = [
+            types.Content(
+                role="model" if item["role"] == "assistant" else "user",
+                parts=[types.Part.from_text(text=item["content"])],
+            )
+            for item in messages if item["role"] != "system"
+        ]
         partial_message = ""
-        for event in client.interactions.create(
-            model=remote_model, input=prompt, stream=True
-        ):
-            if event.event_type == "step.delta":
-                delta = getattr(event, "delta", None)
-                if getattr(delta, "type", None) == "text":
-                    partial_message += delta.text
+        try:
+            for event in client.models.generate_content_stream(
+                model=remote_model,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_message,
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+                ),
+            ):
+                if event.text:
+                    partial_message += event.text
                     yield partial_message
+        except errors.APIError as error:
+            if error.code in (429, 503):
+                message = "Gemini is busy or your API quota has been reached. Try again shortly or select the local Qwen model."
+            elif error.code == 404:
+                message = "The configured Gemini model is unavailable. Update GEMINI_MODEL in .env to a model available to your account and restart the app."
+            else:
+                message = f"Gemini could not complete the request (HTTP {error.code}). Check your API access and try again."
+            yield f"{partial_message}\n\n{message}".strip()
+    else:
+        raise ValueError(f"Unknown model provider: {selected_provider}")
 
 
 model_selector = gr.Dropdown(
     choices=available_providers,
     value=available_providers[0],
     label="Model",
-    info="Choose Gemini Remote, Ollama, or a Transformers model.",
+    info="Choose Gemini via API or Qwen running locally on CPU.",
 )
 
 demo_interface = gr.ChatInterface(

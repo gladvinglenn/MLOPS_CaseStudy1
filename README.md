@@ -1,5 +1,5 @@
 ---
-title: Gemini and Ollama Chatbot
+title: Gemini and Qwen Chatbot
 emoji: 🤖
 colorFrom: blue
 colorTo: green
@@ -10,11 +10,32 @@ hardware: cpu-basic
 pinned: false
 ---
 
-# Gemini and Ollama Chatbot
+# Gemini and Qwen Chatbot
 
-This Gradio app supports Gemini Remote, Local Model (Ollama), and Local Model (Transformers) providers.
+This Gradio chatbot has two options: Gemini Remote using your Google API key, and Local Model (Transformers) using `Qwen/Qwen2.5-0.5B-Instruct` on CPU.
 
-On Hugging Face Spaces, configure `GOOGLE_API_KEY` as a Space secret for Gemini. The Transformers provider runs inside the Space using `TRANSFORMERS_MODEL`, which defaults to `Qwen/Qwen2.5-0.5B-Instruct`. A local `127.0.0.1` Ollama service is only available when running the app on your own machine.
+## Run locally
+
+Use Python 3.11 or 3.12. In PowerShell:
+
+```powershell
+python -m venv .venv-chatbot
+.\.venv-chatbot\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+If you do not already have a `.env` file, copy `.env.example` to `.env`. Set `GOOGLE_API_KEY` to your Gemini API key. `GEMINI_MODEL` defaults to `gemini-3.8-flash`; set it to a model available to your API account if needed.
+
+```powershell
+.\.venv-chatbot\Scripts\python.exe main.py
+```
+
+Open http://localhost:7860 and select a model under **Model settings**.
+
+Qwen needs no API key or GPU. Its first response downloads the model weights from Hugging Face, so allow extra time and an internet connection. Later runs reuse the cached weights. Qwen loads only when selected. `TRANSFORMERS_MODEL` optionally overrides its model ID.
+
+The five direct dependencies are Gradio (UI), python-dotenv (configuration), google-genai (Gemini API), Transformers and PyTorch (local Qwen). A fresh virtual environment avoids retaining packages from the old dependency list.
+
+On Hugging Face Spaces, configure `GOOGLE_API_KEY` as a Space secret for Gemini. Qwen runs on the Space's CPU.
 
 ## Team notifications
 
