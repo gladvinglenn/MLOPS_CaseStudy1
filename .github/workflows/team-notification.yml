@@ -5,6 +5,7 @@ on:
     workflows:
       - Test Local Model
       - Sync to Hugging Face Hub
+      - Benchmark Models
     types: [completed]
 
 jobs:

@@ -40,3 +40,7 @@ On Hugging Face Spaces, configure `GOOGLE_API_KEY` as a Space secret for Gemini.
 ## Team notifications
 
 The `Notify Team` GitHub Actions workflow sends test and deployment results to Slack or Discord after the tracked workflows finish. Add a repository secret named `TEAM_WEBHOOK_URL` containing either a Slack incoming webhook URL or a Discord webhook URL. The webhook is never stored in the repository.
+
+## Performance benchmark
+
+Run `Benchmark Models` manually from GitHub Actions to compare response time and response length for the Transformers model and Gemini. The benchmark runs on demand because the Transformers model must be downloaded before the first measurement.
