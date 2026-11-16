@@ -1,5 +1,5 @@
 ---
-title: Gemini and Qwen Chatbot
+title: Gemini API Chatbot
 emoji: 🤖
 colorFrom: blue
 colorTo: green
@@ -10,9 +10,9 @@ hardware: cpu-basic
 pinned: false
 ---
 
-# Gemini and Qwen Chatbot
+# Gemini API Chatbot
 
-This Gradio chatbot has two options: Gemini Remote using your Google API key, and Local Model (Transformers) using `Qwen/Qwen2.5-0.5B-Instruct` on CPU.
+This Gradio chatbot uses Gemini through the Google API.
 
 ## Run locally
 
@@ -29,13 +29,13 @@ If you do not already have a `.env` file, copy `.env.example` to `.env`. Set `GO
 .\.venv-chatbot\Scripts\python.exe main.py
 ```
 
-Open http://localhost:7860 and select a model under **Model settings**.
+Open http://localhost:7860 to chat with Gemini.
 
-Qwen needs no API key or GPU. Its first response downloads the model weights from Hugging Face, so allow extra time and an internet connection. Later runs reuse the cached weights. Qwen loads only when selected. `TRANSFORMERS_MODEL` optionally overrides its model ID.
+The app requires a valid Google API key and an internet connection. It does not download or run a local language model.
 
-The five direct dependencies are Gradio (UI), python-dotenv (configuration), google-genai (Gemini API), Transformers and PyTorch (local Qwen). A fresh virtual environment avoids retaining packages from the old dependency list.
+The direct dependencies are Gradio (UI), python-dotenv (configuration), and google-genai (Gemini API). A fresh virtual environment avoids retaining packages from the old dependency list.
 
-On Hugging Face Spaces, configure `GOOGLE_API_KEY` as a Space secret for Gemini. Qwen runs on the Space's CPU.
+On Hugging Face Spaces, configure `GOOGLE_API_KEY` as a Space secret for Gemini.
 
 ## Team notifications
 
@@ -43,4 +43,4 @@ The `Notify Team` GitHub Actions workflow sends test and deployment results to S
 
 ## Performance benchmark
 
-Run `Benchmark Models` manually from GitHub Actions to compare response time and response length for the Transformers model and Gemini. The benchmark runs on demand because the Transformers model must be downloaded before the first measurement.
+Run `Benchmark Gemini API` manually from GitHub Actions to measure Gemini response time and response length.

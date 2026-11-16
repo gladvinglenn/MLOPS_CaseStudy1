@@ -12,22 +12,9 @@ import main
 PROMPT = "Explain machine learning in one short paragraph."
 
 
-def measure_transformers():
-    started = time.perf_counter()
-    response = main.local_response(PROMPT)
-    elapsed = time.perf_counter() - started
-    if response.startswith("Transformers model could not be loaded:"):
-        raise RuntimeError(response)
-    return {
-        "provider": "Local Model (Transformers)",
-        "elapsed_seconds": round(elapsed, 3),
-        "response_characters": len(response.strip()),
-    }
-
-
 def measure_gemini():
     started = time.perf_counter()
-    chunks = list(main.stream_response(PROMPT, [], "Gemini Remote"))
+    chunks = list(main.stream_response(PROMPT, []))
     elapsed = time.perf_counter() - started
     response = chunks[-1] if chunks else ""
     if response.startswith("Gemini Remote requires"):
@@ -40,9 +27,9 @@ def measure_gemini():
 
 
 def main_benchmark():
-    results = [measure_transformers()]
-    if os.getenv("GOOGLE_API_KEY"):
-        results.append(measure_gemini())
+    if not os.getenv("GOOGLE_API_KEY"):
+        raise RuntimeError("GOOGLE_API_KEY is required to benchmark Gemini.")
+    results = [measure_gemini()]
     print(json.dumps(results, indent=2))
 
 

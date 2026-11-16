@@ -1,4 +1,4 @@
-name: Benchmark Models
+name: Benchmark Gemini API
 
 on:
   workflow_dispatch:

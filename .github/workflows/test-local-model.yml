@@ -1,4 +1,4 @@
-name: Test Local Model
+name: Test Gemini API App
 
 on:
   push:

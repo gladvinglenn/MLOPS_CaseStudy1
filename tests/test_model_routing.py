@@ -28,7 +28,6 @@ def test_gemini_stream_preserves_history(monkeypatch):
     result = list(main.stream_response(
         "Explain gravity",
         [{"role": "user", "content": "Hi"}, {"role": "assistant", "content": "Hello"}],
-        "Gemini Remote",
     ))
     assert result == ["Gravity ", "Gravity attracts masses."]
 
@@ -36,35 +35,9 @@ def test_gemini_stream_preserves_history(monkeypatch):
 def test_gemini_without_api_key(monkeypatch):
     monkeypatch.setattr(main, "client", None)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
-    assert list(main.stream_response("Hi", [], "Gemini Remote")) == [
+    assert list(main.stream_response("Hi", [])) == [
         "Gemini Remote requires the GOOGLE_API_KEY secret."
     ]
-
-
-def test_qwen_loads_once_on_cpu_without_api_key(monkeypatch):
-    calls = []
-
-    class FakePipeline:
-        tokenizer = SimpleNamespace(apply_chat_template=lambda *args, **kwargs: "prompt")
-
-        def __call__(self, prompt, **kwargs):
-            return [{"generated_text": "Local answer"}]
-
-    def pipeline(task, **kwargs):
-        calls.append((task, kwargs))
-        return FakePipeline()
-
-    monkeypatch.setitem(sys.modules, "transformers", SimpleNamespace(pipeline=pipeline))
-    monkeypatch.setattr(main, "transformers_pipeline", None)
-    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
-    for _ in range(2):
-        assert list(main.stream_response("Hi", [], "Local Model (Transformers)")) == ["Local answer"]
-    assert calls == [("text-generation", {"model": main.transformers_model, "device": -1})]
-
-
-def test_removed_provider_is_rejected():
-    with pytest.raises(ValueError, match="Unknown model provider"):
-        list(main.stream_response("Hi", [], "Local Model (Ollama)"))
 
 
 @pytest.mark.parametrize("code", [404, 429, 503])
@@ -75,6 +48,6 @@ def test_gemini_api_errors_are_readable(monkeypatch, code):
     monkeypatch.setattr(main, "client", SimpleNamespace(
         models=SimpleNamespace(generate_content_stream=generate_content_stream)
     ))
-    response = list(main.stream_response("Hi", [], "Gemini Remote"))
+    response = list(main.stream_response("Hi", []))
     assert len(response) == 1
     assert "GEMINI_MODEL" in response[0] if code == 404 else "Try again" in response[0]

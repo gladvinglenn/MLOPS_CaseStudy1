@@ -74,30 +74,13 @@ def looks_correct(answer, expected):
     return expected_norm in answer_norm or answer_norm in expected_norm
 
 
-def evaluate_local(prompt_data, runs=2):
-    results = []
-    for i in range(runs):
-        start = time.perf_counter()
-        answer = main.local_response(prompt_data["prompt"])
-        elapsed = time.perf_counter() - start
-        correct = looks_correct(answer, prompt_data["expected"])
-        results.append({
-            "run": i + 1,
-            "seconds": round(elapsed, 3),
-            "answer": answer[:700],
-            "expected": prompt_data["expected"],
-            "matches_expected": correct,
-        })
-    return results
-
-
 def evaluate_gemini(prompt_data, runs=2):
     if not os.getenv("GOOGLE_API_KEY"):
         return {"status": "skipped", "reason": "GOOGLE_API_KEY not set"}
     results = []
     for i in range(runs):
         start = time.perf_counter()
-        chunks = list(main.stream_response(prompt_data["prompt"], [], "Gemini Remote"))
+        chunks = list(main.stream_response(prompt_data["prompt"], []))
         elapsed = time.perf_counter() - start
         answer = "".join(chunks) if chunks else ""
         correct = looks_correct(answer, prompt_data["expected"])
@@ -118,7 +101,6 @@ def main_eval():
             "label": item["label"],
             "prompt": item["prompt"],
             "expected": item["expected"],
-            "local": evaluate_local(item, runs=2),
             "gemini": evaluate_gemini(item, runs=2),
         }
         report.append(row)
