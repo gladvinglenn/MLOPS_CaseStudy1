@@ -91,6 +91,6 @@ demo_interface = gr.ChatInterface(
 if __name__ == "__main__":
     demo_interface.launch(
         server_name="0.0.0.0",
-        server_port=7860,
+        server_port=int(os.getenv("PORT", "7860")),
         debug=False
     )
